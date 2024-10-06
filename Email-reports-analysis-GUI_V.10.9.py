@@ -1,5 +1,6 @@
 # Import the relevant libraries
 from win32com.client import Dispatch
+from win32com.shell import shell, shellcon
 from pathlib import Path
 from datetime import date
 from shutil import make_archive
@@ -44,7 +45,8 @@ KSKK = {'client':'KSKK',
 CHECK_ERROR = '1_Check_Error'
 
 # Create output folder
-USSER_DESKTOP_PATH = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+# USSER_DESKTOP_PATH = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+USSER_DESKTOP_PATH = shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)
 WK_DIR = Path(USSER_DESKTOP_PATH) / 'XaasIT_WK_DIR'
 WK_DIR.mkdir(parents=True, exist_ok=True)
 DATE = date.today()
@@ -56,7 +58,6 @@ ARCHIVE_THRESHOLD = 20
 SWIFT_PATTERN = r'SWIFT+.*Delivery: (.*_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}:[0-9]{2}:[0-9]{2}) on Server:'
 USUAL_DELIVERYS_PATTERN = r'Delivery: (.+) on Server:'
 
-
 # @@@ For testing @@@
 EMAILS_LIMIT = 500
 TEST_XAASIT = 'Test Xaas'
@@ -66,7 +67,7 @@ CHECK_OK = '2_Check_OK'
 
 def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbox'):
     # Connect to email
-    for i in range(10): # Try to connect outlook. Thie loop is need it because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
+    for i in range(10): # Try to connect to Outlook. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
         try:
             OUTLOOK = Dispatch('Outlook.Application')
             OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
@@ -264,7 +265,7 @@ def main():
             return MESSAGE_SELECT.configure(text='Please make a selection')
         
         # Extract the SN email, for the selected client
-        SN_emails = subject_SN_filter(Test_XaasIT_emails, check_error_client)
+        SN_emails = subject_SN_filter(XaasIT_emails, check_error_client)
 
         # 📂 Create separate folder for each client\day and for multiple runs 
         target_folder = multiple_runs(WK_DIR, check_error_client['client'], DATE)
@@ -301,7 +302,7 @@ def main():
                                                                 XAASIT_EMAIL,
                                                                 check_error_client['eMail_To'],
                                                                 XAASIT_EMAIL,
-                                                                check_error_client['eMail_subject'],
+                                                                check_error_client['client'] + ' - ' + check_error_client['eMail_subject'],
                                                                 deliverys['SWIFTs_list'],
                                                                 deliverys['usually_deliveries'],
                                                                 target_folder), 
@@ -314,8 +315,8 @@ def main():
     BUTTON_MAIN = ct.CTkButton(FRAME_EXTRACT, font=('Helvetica', 22))
 
     # Connect to email and extrat the emails list 
-    OUTLOOK, Test_XaasIT_emails = email_connection(USER_EMAIL, TEST_XAASIT)
-    # OUTLOOK, XaasIT_emails = email_connection(XAASIT_EMAIL, CHECK_ERROR)
+    # OUTLOOK, Test_XaasIT_emails = email_connection(USER_EMAIL, TEST_XAASIT)
+    OUTLOOK, XaasIT_emails = email_connection(XAASIT_EMAIL, CHECK_ERROR)
 
     # Opening message
     MESSAGE_OPENING.configure(text='Select a client')

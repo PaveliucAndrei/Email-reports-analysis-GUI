@@ -1,9 +1,10 @@
 # Import the relevant libraries
-from win32com.client import Dispatch
+from win32com.client import Dispatch, GetActiveObject
 from win32com.shell import shell, shellcon
 from pathlib import Path
 from datetime import date
 from shutil import make_archive
+import time
 import os
 import re
 import creds
@@ -73,10 +74,9 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
             OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
         except AttributeError as outlook_NameSpace_err:
             print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
-
+        print(i)
     # Connect to sub email folder
-    FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)
-
+    FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
     # Get the emails
     emails = FOLDER.Items
     # Sort messages by ReceivedTime (descending order for most recent)
@@ -224,9 +224,15 @@ def open_folder(path):
 
     return os.startfile(path)
 
+def is_outlook_running():
+    try:
+        GetActiveObject('Outlook.Application')
+        return True
+    except Exception:
+        return False
+
 def open_outlook():
     os.startfile('outlook')
-
 #--------------------------------------------------------------------------------------
 
 def main():
@@ -343,24 +349,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -1,0 +1,1 @@
+pywintypes.com_error: (-2147352567, 'Exception occurred.', (4096, 'Microsoft Outlook', 'The attempted operation failed.  An object could not be found.', None, 0, -2147221233), None) --> Not shure: Because of windows deffender is disable 

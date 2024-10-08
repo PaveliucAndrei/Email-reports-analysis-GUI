@@ -74,6 +74,8 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
             OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
         except AttributeError as outlook_NameSpace_err:
             print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
+        else:
+            break
         print(i)
     # Connect to sub email folder
     FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    

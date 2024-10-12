@@ -16,6 +16,7 @@ from CTkTable import *
 USER_EMAIL = creds.USER_EMAIL
 WMSERVICE_EMAIL = creds.WMSERVICE_EMAIL
 XAASIT_EMAIL = creds.XAASIT_EMAIL
+XAASIT_FOLDER = 'xaas-it (PDM)'
 
 # Clients masks
 AI = {'client':'AI',
@@ -68,15 +69,32 @@ CHECK_OK = '2_Check_OK'
 
 def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbox'):
     # Connect to email
-    for i in range(10): # Try to connect to Outlook. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
-        try:
-            OUTLOOK = Dispatch('Outlook.Application')
+    OUTLOOK = Dispatch('Outlook.Application')
+    for i in range(10): # Try to connect to OUTLOOK NameSpace. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
+        try:            
             OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
         except AttributeError as outlook_NameSpace_err:
             print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
         else:
             break
-        print(i)
+    # Check if the folder/email is present in Outlook
+    if user_email_address in [str(folder) for folder in OUTLOOK_NameSpace.Folders]:
+        print(f'Yes: {user_email_address}')
+    else:
+        print(f'No: {user_email_address}')
+
+    # Check if the inbox folder is pressent 
+    if main_folder in [str(folder) for folder in OUTLOOK_NameSpace.Folders(user_email_address).Folders]:
+        print(f'Yes: {main_folder}')
+    else:
+        print(f'No: {main_folder}')
+
+    # Check if the Check_Error folder is pressent 
+    if sub_folder in [str(folder) for folder in OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders]:
+        print(f'Yes: {sub_folder}')
+    else:
+        print(f'No: {sub_folder}')
+
     # Connect to sub email folder
     FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
     # Get the emails
@@ -275,7 +293,7 @@ def main():
         # Extract the SN email, for the selected client
         SN_emails = subject_SN_filter(XaasIT_emails, check_error_client)
 
-        # 📂 Create separate folder for each client\day and for multiple runs 
+        # 📂 Create separate folder for each client\day and for multiple runs
         target_folder = multiple_runs(WK_DIR, check_error_client['client'], DATE)
 
         # Filter for the name of the SWIFTs form the email subject and extract the attachments
@@ -324,7 +342,7 @@ def main():
 
     # Connect to email and extrat the emails list 
     # OUTLOOK, Test_XaasIT_emails = email_connection(USER_EMAIL, TEST_XAASIT)
-    OUTLOOK, XaasIT_emails = email_connection(XAASIT_EMAIL, CHECK_ERROR)
+    OUTLOOK, XaasIT_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
 
     # Opening message
     MESSAGE_OPENING.configure(text='Select a client')

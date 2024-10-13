@@ -184,18 +184,8 @@ def make_email(OUTLOOK, From, To, BCC, Subject, SWIFTs_list, usually_deliveries,
     email.BodyFormat = 1 # 2 for olFormatHTML https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2003/aa219371(v=office.11)?redirectedfrom=MSDN
     email.Body = make_email_body(SWIFTs_list, usually_deliveries)
     # Set the sender's email account
-    email.SentOnBehalfOfName = 'xaasit@profidata.com'
-    # Search for all available email accounts
-    # send_as = None
-    # for myEmailAddress in OUTLOOK.Session.Accounts:
-    #     if From in str(myEmailAddress):
-    #         send_as = myEmailAddress
-    #         break
-
-    # if send_as != None:
-    #     # This line basically calls the 'email.SendUsingAccount = xyz@email.com'
-    #     email._oleobj_.Invoke(*(64209, 0, 8, 0, send_as))
-
+    email.SentOnBehalfOfName = From
+    
     # Add attachments
     if attachments_path.suffix != '.zip':
         for item in os.listdir(attachments_path):

@@ -54,7 +54,7 @@ WK_DIR.mkdir(parents=True, exist_ok=True)
 DATE = date.today()
 DATE = DATE.isoformat()
 
-ARCHIVE_THRESHOLD = 20
+ARCHIVE_THRESHOLD = 25
 
 # Subject patterns
 SWIFT_PATTERN = r'SWIFT+.*Delivery: (.*_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}:[0-9]{2}:[0-9]{2}) on Server:'
@@ -77,24 +77,6 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
             print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
         else:
             break
-    # Check if the folder/email is present in Outlook
-    if user_email_address in [str(folder) for folder in OUTLOOK_NameSpace.Folders]:
-        print(f'Yes: {user_email_address}')
-    else:
-        print(f'No: {user_email_address}')
-
-    # Check if the inbox folder is pressent 
-    if main_folder in [str(folder) for folder in OUTLOOK_NameSpace.Folders(user_email_address).Folders]:
-        print(f'Yes: {main_folder}')
-    else:
-        print(f'No: {main_folder}')
-
-    # Check if the Check_Error folder is pressent 
-    if sub_folder in [str(folder) for folder in OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders]:
-        print(f'Yes: {sub_folder}')
-    else:
-        print(f'No: {sub_folder}')
-
     # Connect to sub email folder
     FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
     # Get the emails
@@ -104,7 +86,7 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
 
     return OUTLOOK, emails
 
-def select_client(client_selected:str):
+def select_client(client_selected:str) -> dict:
 
     if client_selected == 'AI': return AI
     elif client_selected == 'SKB': return SKB
@@ -128,7 +110,7 @@ def subject_SN_filter(emails, client) -> list:
 
     return email_obj
 
-def subject_mask_filter(subject):
+def subject_mask_filter(subject:str) -> dict:
 
     SWIFT_match = re.search(SWIFT_PATTERN, subject)
     usnual_deliverys_match = re.search(USUAL_DELIVERYS_PATTERN, subject)
@@ -138,13 +120,13 @@ def subject_mask_filter(subject):
     elif usnual_deliverys_match is not None:
         return {'usually_delivery':usnual_deliverys_match.group(1)}
 
-def extract_attachments(attachments, target_folder) -> int | list:
+def extract_attachments(attachments, target_folder:Path) -> int | list:
 
     attachments_count = 0
     attachments_extracted = []
-    
+    # Iterate to each attachments
     for  attachmet in attachments:
-        # Download the attachmnts from the email
+        # Download the attachments from the email
         attachmet.SaveAsFile(target_folder / str(attachmet))
         attachments_count += 1
         # Store the name of the files
@@ -165,16 +147,24 @@ def make_email_body(SWIFTs_list:list, regular_deliveries:list) -> str:
     SWIFTs_list.sort()
     regular_deliveries.sort()
     
-    introduction = 'Good day,\n\nThe next SWIFTs are processed with errors:\n\n'
-    normal_deliveries = '\nThe following interface deliveries were processed with errors:\n\n'
+    introduction = 'Good day,\n\n'
+    swift_deliveries = 'The next SWIFTs are processed with errors:\n\n'
+    normal_deliveries = 'The following interface deliveries were processed with errors:\n\n'
     final = 'Please check.\n\nBest regards.\n\n\n'
 
     body = introduction
-    for swift in SWIFTs_list:
-        body += f'{swift}\t\t\n'
-    body += normal_deliveries
-    for delivey in regular_deliveries:
-        body += f'{delivey}\t\t\n\n\n'
+    # SWIFTs block
+    if SWIFTs_list:
+        body += swift_deliveries
+        for swift in SWIFTs_list:
+            body += f'{swift}\t\t\n'
+        body += '\n'
+    # Regular deliveries block
+    if regular_deliveries:
+        body += normal_deliveries
+        for delivey in regular_deliveries:
+            body += f'{delivey}\t\t\n\n\n'
+
     body += final
 
     return body
@@ -194,15 +184,17 @@ def make_email(OUTLOOK, From, To, BCC, Subject, SWIFTs_list, usually_deliveries,
     email.BodyFormat = 1 # 2 for olFormatHTML https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2003/aa219371(v=office.11)?redirectedfrom=MSDN
     email.Body = make_email_body(SWIFTs_list, usually_deliveries)
     # Set the sender's email account
-    send_as = None
-    for myEmailAddress in OUTLOOK.Session.Accounts:
-        if From in str(myEmailAddress):
-            send_as = myEmailAddress
-            break
+    email.SentOnBehalfOfName = 'xaasit@profidata.com'
+    # Search for all available email accounts
+    # send_as = None
+    # for myEmailAddress in OUTLOOK.Session.Accounts:
+    #     if From in str(myEmailAddress):
+    #         send_as = myEmailAddress
+    #         break
 
-    if send_as != None:
-        # This line basically calls the 'email.SendUsingAccount = xyz@email.com'
-        email._oleobj_.Invoke(*(64209, 0, 8, 0, send_as))
+    # if send_as != None:
+    #     # This line basically calls the 'email.SendUsingAccount = xyz@email.com'
+    #     email._oleobj_.Invoke(*(64209, 0, 8, 0, send_as))
 
     # Add attachments
     if attachments_path.suffix != '.zip':

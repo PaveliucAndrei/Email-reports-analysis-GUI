@@ -69,7 +69,11 @@ CHECK_OK = '2_Check_OK'
 
 def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbox'):
     # Connect to email
-    OUTLOOK = Dispatch('Outlook.Application')
+    OUTLOOK = get_running_outlook_inst()
+    if not get_running_outlook_inst():
+        OUTLOOK = Dispatch('Outlook.Application')
+        print('A new instace of outlook was created')
+    
     for i in range(10): # Try to connect to OUTLOOK NameSpace. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
         try:            
             OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
@@ -83,7 +87,7 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
     emails = FOLDER.Items
     # Sort messages by ReceivedTime (descending order for most recent)
     emails.Sort('[ReceivedTime]', 1) # xlAscending = 1 # xlDescending = 2
-
+    
     return OUTLOOK, emails
 
 def select_client(client_selected:str) -> dict:
@@ -204,13 +208,12 @@ def multiple_runs(WK_dir, client, date):
     target_folder = WK_dir / client / date
     if target_folder.exists():
         # Pars the directories name, as a list
-        dir_list = [p for p in Path(target_folder).parent.iterdir() if p.is_dir() and '_' in p.name]
+        dir_list = [p for p in Path(target_folder).parent.iterdir() if p.is_dir() and '_' in p.name and p.name.split('_')[0] == date]
         # Pars the number of extractions, as a list
         extraction_counter_list = [run_count for d in dir_list if (run_count := int(d.name.split('_')[1])) >= 1]
-        extraction_counter_list.sort(reverse=True)
         
         if extraction_counter_list:
-            extraction_counter = extraction_counter_list[0] + 1
+            extraction_counter = max(extraction_counter_list) + 1
             target_folder = target_folder.with_name(target_folder.name + f'_{extraction_counter}')
         else:
             target_folder = target_folder.with_name(target_folder.name + f'_{extraction_counter}')
@@ -226,10 +229,9 @@ def open_folder(path):
 
     return os.startfile(path)
 
-def is_outlook_running():
+def get_running_outlook_inst():
     try:
-        GetActiveObject('Outlook.Application')
-        return True
+        return GetActiveObject('Outlook.Application')
     except Exception:
         return False
 

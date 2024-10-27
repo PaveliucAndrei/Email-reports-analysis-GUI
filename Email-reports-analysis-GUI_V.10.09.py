@@ -4,7 +4,6 @@ from win32com.shell import shell, shellcon
 from pathlib import Path
 from datetime import date
 from shutil import make_archive
-import time
 import os
 import re
 import creds
@@ -72,7 +71,6 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
     OUTLOOK = get_running_outlook_inst()
     if not get_running_outlook_inst():
         OUTLOOK = Dispatch('Outlook.Application')
-        print('A new instace of outlook was created')
     
     for i in range(10): # Try to connect to OUTLOOK NameSpace. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
         try:            
@@ -81,7 +79,7 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
             print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
         else:
             break
-    # Connect to sub email folder
+    # Connect to sub email folders
     FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
     # Get the emails
     emails = FOLDER.Items
@@ -92,24 +90,24 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
 
 def select_client(client_selected:str) -> dict:
 
-    if client_selected == 'AI': return AI
-    elif client_selected == 'SKB': return SKB
-    elif client_selected == 'EB': return EB
+    if client_selected == 'AI':     return AI
+    elif client_selected == 'EB':   return EB
+    elif client_selected == 'SKB':  return SKB
     elif client_selected == 'KSKK': return KSKK
 
-def subject_SN_filter(emails, client) -> list:
+def subject_SN_filter(emails, client:dir) -> list:
 
     email_obj = []
 
     i = 0
     for email in emails:
-
         subject = email.Subject
 
         if client['SN_mask'] in subject:
             email_obj.append(email)
-  
-        if i >= EMAILS_LIMIT: break
+
+        if i >= EMAILS_LIMIT:
+            break
         i += 1
 
     return email_obj
@@ -129,7 +127,7 @@ def extract_attachments(attachments, target_folder:Path) -> int | list:
     attachments_count = 0
     attachments_extracted = []
     # Iterate to each attachments
-    for  attachmet in attachments:
+    for attachmet in attachments:
         # Download the attachments from the email
         attachmet.SaveAsFile(target_folder / str(attachmet))
         attachments_count += 1
@@ -208,8 +206,9 @@ def multiple_runs(WK_dir, client, date):
     target_folder = WK_dir / client / date
     if target_folder.exists():
         # Pars the directories name, as a list
-        dir_list = [p for p in Path(target_folder).parent.iterdir() if p.is_dir() and '_' in p.name and p.name.split('_')[0] == date]
-        # Pars the number of extractions, as a list
+        dir_list = [p for p in Path(target_folder).parent.iterdir() \
+                    if p.is_dir() and '_' in p.name and p.name.split('_')[0] == date]
+        # Extract the number of runs, as a list
         extraction_counter_list = [run_count for d in dir_list if (run_count := int(d.name.split('_')[1])) >= 1]
         
         if extraction_counter_list:
@@ -222,10 +221,11 @@ def multiple_runs(WK_dir, client, date):
     
     return target_folder
 
-def open_folder(path):
+def open_folder(path, missing_folder_message):
 
     if not Path.exists(path):  # Check if folder path is valid
-        print(f'Error: Folder path "{path}" does not exist.')
+        missing_folder_message.configure(text=f'Error: Folder path "{path}" does not exist.')
+        # raise Exception(f'Error: Folder path "{path}" does not exist.')
 
     return os.startfile(path)
 
@@ -237,6 +237,7 @@ def get_running_outlook_inst():
 
 def open_outlook():
     os.startfile('outlook')
+
 #--------------------------------------------------------------------------------------
 
 def main():
@@ -250,9 +251,8 @@ def main():
     ROOT= ct.CTk()
     # Window configuration
     ROOT.title('Attachments Extraction')
-    ROOT.geometry('600x400')
+    ROOT.geometry('650x400')
 
-    ROOT.grid_columnconfigure(0, weight=1)
     ROOT.grid_columnconfigure(0, weight=1)
     ROOT.grid_rowconfigure(0, weight=1)
     
@@ -271,7 +271,7 @@ def main():
        
         # Filter for the slected client
         check_error_client = select_client(radio_selection.get())
-        if check_error_client is None:
+        if not check_error_client:
             return MESSAGE_SELECT.configure(text='Please make a selection')
         
         # Extract the SN email, for the selected client
@@ -303,11 +303,18 @@ def main():
             # archive_path = make_archive(target_folder / target_folder.stem, 'zip', target_folder.parent, target_folder.name)
             target_folder = Path(archive_path)
 
-        MESSAGE_SELECT.configure(text=f'{str(check_error_client['client'])}: {attachment_count} attachments extracted')
-        MESSAGE_FILE_LOC.configure(text=f'File location -> {target_folder}')
-        BUTTON_GO_TO = ct.CTkButton(FRAME_EXTRACT, text='Go to 📂', command=lambda: open_folder(target_folder), font=('Helvetica', 22))
+        MESSAGE_SELECT_TEXT = f'{str(check_error_client['client'])}: {attachment_count} attachments extracted'
+        MESSAGE_FILE_LOC_TEXT = f'File location -> {target_folder}'
+
+        MESSAGE_SELECT.configure(text=MESSAGE_SELECT_TEXT)
+        MESSAGE_FILE_LOC.configure(text=MESSAGE_FILE_LOC_TEXT)
+        BUTTON_GO_TO = ct.CTkButton(FRAME_EXTRACT, 
+                                    text='Go to 📂', 
+                                    command=lambda: open_folder(target_folder, MESSAGE_FILE_LOC), 
+                                    font=('Helvetica', 22))
         BUTTON_GO_TO.place(relx=0.3, rely=0.9, anchor=ct.N)
-        BUTTON_EMAIL = ct.CTkButton(FRAME_EXTRACT, text='📧', 
+        BUTTON_EMAIL = ct.CTkButton(FRAME_EXTRACT,
+                                    text='📧',
                                     command=lambda: make_email(OUTLOOK,
                                                                 XAASIT_EMAIL,
                                                                 check_error_client['eMail_To'],
@@ -324,7 +331,7 @@ def main():
     MESSAGE_OPENING.place(relx=0.5, rely=0.1, anchor=ct.N)
     BUTTON_MAIN = ct.CTkButton(FRAME_EXTRACT, font=('Helvetica', 22))
 
-    # Connect to email and extrat the emails list 
+    # Connect to email and extrat the emails list
     # OUTLOOK, Test_XaasIT_emails = email_connection(USER_EMAIL, TEST_XAASIT)
     OUTLOOK, XaasIT_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
 
@@ -353,6 +360,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 

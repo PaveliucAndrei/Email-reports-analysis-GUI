@@ -1,15 +1,17 @@
 # Import the relevant libraries
 from win32com.client import Dispatch, GetActiveObject
-from win32com.shell import shell, shellcon
+from win32com.shell import shell, shellcon # type: ignore
 from pathlib import Path
 from datetime import date
 from shutil import make_archive
+from json import load
 import os
 import re
 import creds
 # GUI librarie imports 
 import customtkinter as ct
 from CTkTable import *
+import json
 
 # Emails
 USER_EMAIL = creds.USER_EMAIL
@@ -17,30 +19,34 @@ WMSERVICE_EMAIL = creds.WMSERVICE_EMAIL
 XAASIT_EMAIL = creds.XAASIT_EMAIL
 XAASIT_FOLDER = 'xaas-it (PDM)'
 
-# Clients masks
-AI = {'client':'AI',
-      'SN_mask':'CHECK_ERROR AI Xentis SN',
-      'eMail_To':creds.AI_eMail_To,
-      'BBC':'',
-      'eMail_subject':'Unprocessed deliveries'}
+# Import Clients config file
+with open('clients_config.json') as clients_config:
+    CLIENTS = load(clients_config)
 
-SKB = {'client':'SKB', 
-        'SN_mask':'CHECK_ERROR SKB Xentis SN',
-        'eMail_To':creds.SKB_eMail_To,
-        'BBC':'',
-        'eMail_subject':'Unprocessed deliveries'}
+# # Clients configuretion
+# AI = {'client':'AI',
+#       'SN_mask':'CHECK_ERROR AI Xentis SN',
+#       'eMail_To':creds.AI_eMail_To,
+#       'BBC':'',
+#       'eMail_subject':'Unprocessed deliveries'}
 
-EB = {'client':'EB', 
-      'SN_mask':'CHECK_ERROR EB Xentis SN',
-      'eMail_To':creds.EB_eMail_To,
-      'BBC':'',
-      'eMail_subject':'Unprocessed deliveries'}
+# SKB = {'client':'SKB', 
+#         'SN_mask':'CHECK_ERROR SKB Xentis SN',
+#         'eMail_To':creds.SKB_eMail_To,
+#         'BBC':'',
+#         'eMail_subject':'Unprocessed deliveries'}
 
-KSKK = {'client':'KSKK', 
-      'SN_mask':'CHECK_ERROR KSKK Xentis SN',
-      'eMail_To':creds.KSKK_eMail_To,
-      'BBC':'',
-      'eMail_subject':'Unprocessed deliveries'}
+# EB = {'client':'EB', 
+#       'SN_mask':'CHECK_ERROR EB Xentis SN',
+#       'eMail_To':creds.EB_eMail_To,
+#       'BBC':'',
+#       'eMail_subject':'Unprocessed deliveries'}
+
+# KSKK = {'client':'KSKK', 
+#       'SN_mask':'CHECK_ERROR KSKK Xentis SN',
+#       'eMail_To':creds.KSKK_eMail_To,
+#       'BBC':'',
+#       'eMail_subject':'Unprocessed deliveries'}
 
 # Email sub folders
 CHECK_ERROR = '1_Check_Error'
@@ -90,12 +96,12 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
 
 def select_client(client_selected:str) -> dict:
 
-    if client_selected == 'AI':     return AI
-    elif client_selected == 'EB':   return EB
-    elif client_selected == 'SKB':  return SKB
-    elif client_selected == 'KSKK': return KSKK
+    if client_selected == 'AI':     return CLIENTS['AI']
+    elif client_selected == 'EB':   return CLIENTS['EB']
+    elif client_selected == 'SKB':  return CLIENTS['SKB']
+    elif client_selected == 'KSKK': return CLIENTS['KSKK']
 
-def subject_SN_filter(emails, client:dir) -> list:
+def subject_SN_filter(emails, sn_mask:str) -> list:
 
     email_obj = []
 
@@ -103,7 +109,7 @@ def subject_SN_filter(emails, client:dir) -> list:
     for email in emails:
         subject = email.Subject
 
-        if client['SN_mask'] in subject:
+        if sn_mask in subject:
             email_obj.append(email)
 
         if i >= EMAILS_LIMIT:
@@ -201,9 +207,9 @@ def make_email(OUTLOOK, From, To, BCC, Subject, SWIFTs_list, usually_deliveries,
 
     email.display()
 
-def multiple_runs(WK_dir, client, date):
+def multiple_runs(WK_dir, client_id, date):
     extraction_counter = 1
-    target_folder = WK_dir / client / date
+    target_folder = WK_dir / client_id / date
     if target_folder.exists():
         # Pars the directories name, as a list
         dir_list = [p for p in Path(target_folder).parent.iterdir() \
@@ -275,10 +281,10 @@ def main():
             return MESSAGE_SELECT.configure(text='Please make a selection')
         
         # Extract the SN email, for the selected client
-        SN_emails = subject_SN_filter(XaasIT_emails, check_error_client)
+        SN_emails = subject_SN_filter(XaasIT_emails, check_error_client['SN_mask'])
 
         # 📂 Create separate folder for each client\day and for multiple runs
-        target_folder = multiple_runs(WK_DIR, check_error_client['client'], DATE)
+        target_folder = multiple_runs(WK_DIR, check_error_client['client_ID'], DATE)
 
         # Filter for the name of the SWIFTs form the email subject and extract the attachments
         for SN_email in SN_emails:        
@@ -303,7 +309,7 @@ def main():
             # archive_path = make_archive(target_folder / target_folder.stem, 'zip', target_folder.parent, target_folder.name)
             target_folder = Path(archive_path)
 
-        MESSAGE_SELECT_TEXT = f'{str(check_error_client['client'])}: {attachment_count} attachments extracted'
+        MESSAGE_SELECT_TEXT = f'{str(check_error_client['client_ID'])}: {attachment_count} attachments extracted'
         MESSAGE_FILE_LOC_TEXT = f'File location -> {target_folder}'
 
         MESSAGE_SELECT.configure(text=MESSAGE_SELECT_TEXT)
@@ -319,7 +325,7 @@ def main():
                                                                 XAASIT_EMAIL,
                                                                 check_error_client['eMail_To'],
                                                                 XAASIT_EMAIL,
-                                                                check_error_client['client'] + ' - ' + check_error_client['eMail_subject'],
+                                                                check_error_client['client_ID'] + ' - ' + check_error_client['eMail_subject'],
                                                                 deliverys['SWIFTs_list'],
                                                                 deliverys['usually_deliveries'],
                                                                 target_folder), 

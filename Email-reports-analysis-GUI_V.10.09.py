@@ -7,46 +7,22 @@ from shutil import make_archive
 from json import load
 import os
 import re
-import creds
 # GUI librarie imports 
 import customtkinter as ct
 from CTkTable import *
-import json
 
-# Emails
-USER_EMAIL = creds.USER_EMAIL
-WMSERVICE_EMAIL = creds.WMSERVICE_EMAIL
-XAASIT_EMAIL = creds.XAASIT_EMAIL
-XAASIT_FOLDER = 'xaas-it (PDM)'
+# Emails credentials
+with open('creds.json') as creds:
+    CREDENT = load(creds)
+
+WMSERVICE_EMAIL = CREDENT['WMSERVICE_EMAIL']
+XAASIT_EMAIL = CREDENT['XAASIT_EMAIL']
 
 # Import Clients config file
 with open('clients_config.json') as clients_config:
     CLIENTS = load(clients_config)
 
-# # Clients configuretion
-# AI = {'client':'AI',
-#       'SN_mask':'CHECK_ERROR AI Xentis SN',
-#       'eMail_To':creds.AI_eMail_To,
-#       'BBC':'',
-#       'eMail_subject':'Unprocessed deliveries'}
-
-# SKB = {'client':'SKB', 
-#         'SN_mask':'CHECK_ERROR SKB Xentis SN',
-#         'eMail_To':creds.SKB_eMail_To,
-#         'BBC':'',
-#         'eMail_subject':'Unprocessed deliveries'}
-
-# EB = {'client':'EB', 
-#       'SN_mask':'CHECK_ERROR EB Xentis SN',
-#       'eMail_To':creds.EB_eMail_To,
-#       'BBC':'',
-#       'eMail_subject':'Unprocessed deliveries'}
-
-# KSKK = {'client':'KSKK', 
-#       'SN_mask':'CHECK_ERROR KSKK Xentis SN',
-#       'eMail_To':creds.KSKK_eMail_To,
-#       'BBC':'',
-#       'eMail_subject':'Unprocessed deliveries'}
+XAASIT_FOLDER = 'xaas-it (PDM)'
 
 # Email sub folders
 CHECK_ERROR = '1_Check_Error'
@@ -66,6 +42,7 @@ SWIFT_PATTERN = r'SWIFT+.*Delivery: (.*_[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}:[0-9
 USUAL_DELIVERYS_PATTERN = r'Delivery: (.+) on Server:'
 
 # @@@ For testing @@@
+USER_EMAIL = CREDENT['USER_EMAIL']
 EMAILS_LIMIT = 500
 TEST_XAASIT = 'Test Xaas'
 CHECK_OK = '2_Check_OK'
@@ -80,13 +57,13 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
     
     for i in range(10): # Try to connect to OUTLOOK NameSpace. Thie loop is needed because of the: "AttributeError - Outlook.Application.GetNameSpace" thet some times appears
         try:            
-            OUTLOOK_NameSpace = OUTLOOK.GetNameSpace('MAPI')
-        except AttributeError as outlook_NameSpace_err:
-            print(f'### Erron on run: {i} -- {outlook_NameSpace_err}')
+            OUTLOOK_NAMESPACE = OUTLOOK.GetNameSpace('MAPI')
+        except AttributeError as Outlook_NameSpace_err:
+            print(f'### Erron on run: {i} -- {Outlook_NameSpace_err}')
         else:
             break
     # Connect to sub email folders
-    FOLDER = OUTLOOK_NameSpace.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
+    FOLDER = OUTLOOK_NAMESPACE.Folders(user_email_address).Folders(main_folder).Folders(sub_folder)    
     # Get the emails
     emails = FOLDER.Items
     # Sort messages by ReceivedTime (descending order for most recent)
@@ -94,14 +71,7 @@ def email_connection(user_email_address:str, sub_folder:str, main_folder = 'Inbo
     
     return OUTLOOK, emails
 
-def select_client(client_selected:str) -> dict:
-
-    if client_selected == 'AI':     return CLIENTS['AI']
-    elif client_selected == 'EB':   return CLIENTS['EB']
-    elif client_selected == 'SKB':  return CLIENTS['SKB']
-    elif client_selected == 'KSKK': return CLIENTS['KSKK']
-
-def subject_SN_filter(emails, sn_mask:str) -> list:
+def subject_sn_filter(emails, sn_mask:str) -> list:
 
     email_obj = []
 
@@ -118,15 +88,15 @@ def subject_SN_filter(emails, sn_mask:str) -> list:
 
     return email_obj
 
-def subject_mask_filter(subject:str) -> dict:
+def subject_mask_filter(subject:str) -> str | str:
 
-    SWIFT_match = re.search(SWIFT_PATTERN, subject)
+    swift_match = re.search(SWIFT_PATTERN, subject)
     usnual_deliverys_match = re.search(USUAL_DELIVERYS_PATTERN, subject)
 
-    if SWIFT_match is not None:
-        return {'SWIFT':SWIFT_match.group(1)}
+    if swift_match is not None:
+        return 'SWIFT', swift_match.group(1)
     elif usnual_deliverys_match is not None:
-        return {'usually_delivery':usnual_deliverys_match.group(1)}
+        return 'usually_delivery', usnual_deliverys_match.group(1)
 
 def extract_attachments(attachments, target_folder:Path) -> int | list:
 
@@ -143,16 +113,16 @@ def extract_attachments(attachments, target_folder:Path) -> int | list:
     return attachments_count, attachments_extracted
     
 # Left join list
-def left_join(SWIFTs_name_subject, attachments_extracted) -> list:
+def left_join(swifts_name_subject, attachments_extracted) -> list:
     # Convert the data to sets
-    SWIFTs_name_subject = set(SWIFTs_name_subject)
+    swifts_name_subject = set(swifts_name_subject)
     attachments_extracted = set(attachments_extracted)
 
-    return list(SWIFTs_name_subject - attachments_extracted)
+    return list(swifts_name_subject - attachments_extracted)
 
-def make_email_body(SWIFTs_list:list, regular_deliveries:list) -> str:
+def make_email_body(swifts_list:list, regular_deliveries:list) -> str:
 
-    SWIFTs_list.sort()
+    swifts_list.sort()
     regular_deliveries.sort()
     
     introduction = 'Good day,\n\n'
@@ -162,9 +132,9 @@ def make_email_body(SWIFTs_list:list, regular_deliveries:list) -> str:
 
     body = introduction
     # SWIFTs block
-    if SWIFTs_list:
+    if swifts_list:
         body += swift_deliveries
-        for swift in SWIFTs_list:
+        for swift in swifts_list:
             body += f'{swift}\t\t\n'
         body += '\n'
     # Regular deliveries block
@@ -177,22 +147,22 @@ def make_email_body(SWIFTs_list:list, regular_deliveries:list) -> str:
 
     return body
 
-def make_email(OUTLOOK, From, To, BCC, Subject, SWIFTs_list, usually_deliveries, attachments_path:Path):
+def make_email(outlook, em_from, em_to, em_bbc, em_subject, swifts_list, usually_deliveries, attachments_path:Path):
     # Create a new email message
-    email = OUTLOOK.CreateItem(0)  # 0 = create email item
+    email = outlook.CreateItem(0)  # 0 = create email item
     
     # Set the email properties
-    if isinstance(To, list): 
-        email.To = ';'.join(To)
+    if isinstance(em_to, list): 
+        email.To = ';'.join(em_to)
     else: 
-        email.To = To
-    email.BCC = BCC
-    email.Subject = Subject
+        email.To = em_to
+    email.BCC = em_bbc
+    email.Subject = em_subject
     # Set the email body
     email.BodyFormat = 1 # 2 for olFormatHTML https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2003/aa219371(v=office.11)?redirectedfrom=MSDN
-    email.Body = make_email_body(SWIFTs_list, usually_deliveries)
+    email.Body = make_email_body(swifts_list, usually_deliveries)
     # Set the sender's email account
-    email.SentOnBehalfOfName = From
+    email.SentOnBehalfOfName = em_from
     
     # Add attachments
     if attachments_path.suffix != '.zip':
@@ -207,9 +177,9 @@ def make_email(OUTLOOK, From, To, BCC, Subject, SWIFTs_list, usually_deliveries,
 
     email.display()
 
-def multiple_runs(WK_dir, client_id, date):
+def multiple_runs(wk_dir, client_id, date):
     extraction_counter = 1
-    target_folder = WK_dir / client_id / date
+    target_folder = wk_dir / client_id / date
     if target_folder.exists():
         # Pars the directories name, as a list
         dir_list = [p for p in Path(target_folder).parent.iterdir() \
@@ -232,6 +202,7 @@ def open_folder(path, missing_folder_message):
     if not Path.exists(path):  # Check if folder path is valid
         missing_folder_message.configure(text=f'Error: Folder path "{path}" does not exist.')
         # raise Exception(f'Error: Folder path "{path}" does not exist.')
+        return None
 
     return os.startfile(path)
 
@@ -276,27 +247,27 @@ def main():
         attachments_extracted = []
        
         # Filter for the slected client
-        check_error_client = select_client(radio_selection.get())
+        check_error_client = CLIENTS[radio_selection.get()]
         if not check_error_client:
             return MESSAGE_SELECT.configure(text='Please make a selection')
         
         # Extract the SN email, for the selected client
-        SN_emails = subject_SN_filter(XaasIT_emails, check_error_client['SN_mask'])
+        sn_emails = subject_sn_filter(xaasit_emails, check_error_client['SN_mask'])
 
         # 📂 Create separate folder for each client\day and for multiple runs
         target_folder = multiple_runs(WK_DIR, check_error_client['client_ID'], DATE)
 
         # Filter for the name of the SWIFTs form the email subject and extract the attachments
-        for SN_email in SN_emails:        
-            delivery_no = subject_mask_filter(SN_email.Subject)
+        for sn_email in sn_emails:        
+            tip, delivery_no = subject_mask_filter(sn_email.Subject)
             # Separete the SWIFT delivereis and normal ones
             if delivery_no is not None:
-                if 'SWIFT' in delivery_no:
-                    deliverys['SWIFTs_list'].append(delivery_no['SWIFT'])
-                elif 'usually_delivery' in delivery_no:
-                    deliverys['usually_deliveries'].append(delivery_no['usually_delivery'])
+                if tip == 'SWIFT':
+                    deliverys['SWIFTs_list'].append(delivery_no)
+                elif tip == 'usually_delivery':
+                    deliverys['usually_deliveries'].append(delivery_no)
             # Extract the attachments
-            att_count, att_extracted = extract_attachments(SN_email.Attachments, target_folder)
+            att_count, att_extracted = extract_attachments(sn_email.Attachments, target_folder)
             attachment_count += att_count
             attachments_extracted.extend(att_extracted)
 
@@ -338,8 +309,8 @@ def main():
     BUTTON_MAIN = ct.CTkButton(FRAME_EXTRACT, font=('Helvetica', 22))
 
     # Connect to email and extrat the emails list
-    # OUTLOOK, Test_XaasIT_emails = email_connection(USER_EMAIL, TEST_XAASIT)
-    OUTLOOK, XaasIT_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
+    # OUTLOOK, test_xaasit_emails = email_connection(USER_EMAIL, TEST_XAASIT)
+    OUTLOOK, xaasit_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
 
     # Opening message
     MESSAGE_OPENING.configure(text='Select a client')

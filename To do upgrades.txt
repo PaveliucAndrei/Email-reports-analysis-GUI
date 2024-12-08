@@ -1,0 +1,13 @@
+1. Credentiale criptate si citire fisier, nu import
+2. select_client() ||  check_error_client = CLIENTS[radio_selection.get()]
+3. Lower case = snake case 
+4. linter win32com 
+5. retunrn the tip of delievery in subject_mask_filter
+6! transfer prin referinta la extract_attachments()
+	Cum adica transfer? Ce transferi unde?
+	
+7. make_email() make all the emails a list email.To = ';'.join(em_to)
+8. multiple_runs make it for hh:mm:ss
+
+9. Fix the I can't log in to the new Outlook
+

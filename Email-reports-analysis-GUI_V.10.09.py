@@ -16,7 +16,7 @@ with open('creds.json') as creds:
     CREDENT = load(creds)
 
 WMSERVICE_EMAIL = CREDENT['WMSERVICE_EMAIL']
-XAASIT_EMAIL = CREDENT['XAASIT_EMAIL']
+PDMOPERATION_EMAIL = CREDENT['PDMOPERATION_EMAIL']
 
 # Import Clients config file
 with open('clients_config.json') as clients_config:
@@ -252,7 +252,7 @@ def main():
             return MESSAGE_SELECT.configure(text='Please make a selection')
         
         # Extract the SN email, for the selected client
-        sn_emails = subject_sn_filter(xaasit_emails, check_error_client['SN_mask'])
+        sn_emails = subject_sn_filter(alert_emails, check_error_client['SN_mask'])
 
         # 📂 Create separate folder for each client\day and for multiple runs
         target_folder = multiple_runs(WK_DIR, check_error_client['client_ID'], DATE)
@@ -293,9 +293,9 @@ def main():
         BUTTON_EMAIL = ct.CTkButton(FRAME_EXTRACT,
                                     text='📧',
                                     command=lambda: make_email(OUTLOOK,
-                                                                XAASIT_EMAIL,
+                                                                PDMOPERATION_EMAIL,
                                                                 check_error_client['eMail_To'],
-                                                                XAASIT_EMAIL,
+                                                                PDMOPERATION_EMAIL,
                                                                 check_error_client['client_ID'] + ' - ' + check_error_client['eMail_subject'],
                                                                 deliverys['SWIFTs_list'],
                                                                 deliverys['usually_deliveries'],
@@ -309,8 +309,8 @@ def main():
     BUTTON_MAIN = ct.CTkButton(FRAME_EXTRACT, font=('Helvetica', 22))
 
     # Connect to email and extrat the emails list
-    # OUTLOOK, test_xaasit_emails = email_connection(USER_EMAIL, TEST_XAASIT)
-    OUTLOOK, xaasit_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
+    # OUTLOOK, test_alert_emails = email_connection(USER_EMAIL, TEST_XAASIT)
+    OUTLOOK, alert_emails = email_connection(XAASIT_FOLDER, CHECK_ERROR)
 
     # Opening message
     MESSAGE_OPENING.configure(text='Select a client')

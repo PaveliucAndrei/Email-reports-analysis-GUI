@@ -7,7 +7,11 @@
 	Cum adica transfer? Ce transferi unde?
 	
 7. make_email() make all the emails a list email.To = ';'.join(em_to)
-8. multiple_runs make it for hh:mm:ss
+8. multiple_runs make it for hh:mm:ss.
 
 9. Fix the I can't log in to the new Outlook
+
+10. Fix the GUI message "Please select a client"
+
+
 

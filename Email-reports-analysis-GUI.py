@@ -2,7 +2,7 @@
 from win32com.client import Dispatch, GetActiveObject
 from win32com.shell import shell, shellcon # type: ignore
 from pathlib import Path
-from datetime import date
+from datetime import datetime
 from shutil import make_archive
 from json import load
 import os
@@ -32,8 +32,6 @@ CHECK_ERROR = '1_Check_Error'
 USSER_DESKTOP_PATH = shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)
 WK_DIR = Path(USSER_DESKTOP_PATH) / 'XaasIT_WK_DIR'
 WK_DIR.mkdir(parents=True, exist_ok=True)
-DATE = date.today()
-DATE = DATE.isoformat()
 
 ARCHIVE_THRESHOLD = 25
 
@@ -152,10 +150,7 @@ def make_email(outlook, em_from, em_to, em_bbc, em_subject, swifts_list, usually
     email = outlook.CreateItem(0)  # 0 = create email item
     
     # Set the email properties
-    if isinstance(em_to, list): 
-        email.To = ';'.join(em_to)
-    else: 
-        email.To = em_to
+    email.To = ';'.join(em_to)
     email.BCC = em_bbc
     email.Subject = em_subject
     # Set the email body
@@ -177,16 +172,19 @@ def make_email(outlook, em_from, em_to, em_bbc, em_subject, swifts_list, usually
 
     email.display()
 
-def multiple_runs(wk_dir, client_id, date):
+def create_target_folder(wk_dir, client_id, date):
     extraction_counter = 1
     target_folder = wk_dir / client_id / date
+
     if target_folder.exists():
         # Pars the directories name, as a list
-        dir_list = [p for p in Path(target_folder).parent.iterdir() \
-                    if p.is_dir() and '_' in p.name and p.name.split('_')[0] == date]
+        dir_list = [p for p in Path(target_folder).parent.iterdir() if p.is_dir() and (date in p.name)]
         # Extract the number of runs, as a list
-        extraction_counter_list = [run_count for d in dir_list if (run_count := int(d.name.split('_')[1])) >= 1]
-        
+        extraction_counter_list = []
+        for d in dir_list:
+            if len(d.name.split('_')) == 3:
+                extraction_counter_list.append(int(d.name.split('_')[2]))
+    
         if extraction_counter_list:
             extraction_counter = max(extraction_counter_list) + 1
             target_folder = target_folder.with_name(target_folder.name + f'_{extraction_counter}')
@@ -241,6 +239,9 @@ def main():
 
     def extracting():
         # Some variables
+        DATE = datetime.now()
+        DATE = DATE.strftime('%Y-%m-%d_%H-%M-%S')
+        
         attachment_count = 0
         deliverys = {'SWIFTs_list':[],
                     'usually_deliveries':[]}
@@ -255,7 +256,7 @@ def main():
         sn_emails = subject_sn_filter(alert_emails, check_error_client['SN_mask'])
 
         # 📂 Create separate folder for each client\day and for multiple runs
-        target_folder = multiple_runs(WK_DIR, check_error_client['client_ID'], DATE)
+        target_folder = create_target_folder(WK_DIR, check_error_client['client_ID'], DATE)
 
         # Filter for the name of the SWIFTs form the email subject and extract the attachments
         for sn_email in sn_emails:        

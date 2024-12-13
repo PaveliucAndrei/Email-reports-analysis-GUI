@@ -2,28 +2,28 @@
     "AI": {
         "client_ID": "AI",
         "SN_mask": "CHECK_ERROR AI Xentis SN",
-        "eMail_To": "kag.operations@allianz.at",
+        "eMail_To": ["kag.operations@allianz.at"],
         "BBC": "",
         "eMail_subject": "Unprocessed deliveries"
     },
     "SKB": {
         "client_ID": "SKB",
         "SN_mask": "CHECK_ERROR SKB Xentis SN",
-        "eMail_To": "pk-depotbank@sparkasse-koelnbonn.de",
+        "eMail_To": ["pk-depotbank@sparkasse-koelnbonn.de"],
         "BBC": "",
         "eMail_subject": "Unprocessed deliveries" 
     },
     "EB": {
         "client_ID": "EB",
         "SN_mask": "CHECK_ERROR EB Xentis SN",
-        "eMail_To": ["claudia.lodyga@eb.de', 'felix.kroschewski@eb.de"],
+        "eMail_To": ["claudia.lodyga@eb.de", "felix.kroschewski@eb.de"],
         "BBC": "",
         "eMail_subject": "Unprocessed deliveries"
     },
     "KSKK": {
         "client_ID": "KSKK",
         "SN_mask": "CHECK_ERROR KSKK Xentis SN", 
-        "eMail_To": "'fondsverwaltung@ksk-koeln.de'",
+        "eMail_To": ["fondsverwaltung@ksk-koeln.de"],
         "BBC": "",
         "eMail_subject": "Unprocessed deliveries" 
     }

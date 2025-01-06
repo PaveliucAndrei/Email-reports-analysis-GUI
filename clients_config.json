@@ -6,12 +6,19 @@
         "BBC": "",
         "eMail_subject": "Unprocessed deliveries"
     },
+    "HASPA": {
+        "client_ID": "HASPA",
+        "SN_mask": "CHECK_ERROR HASPA Xentis SN",
+        "eMail_To": ["nostro@haspa.de"],
+        "BBC": "",
+        "eMail_subject": "Unprocessed deliveries"
+    },
     "SKB": {
         "client_ID": "SKB",
         "SN_mask": "CHECK_ERROR SKB Xentis SN",
         "eMail_To": ["pk-depotbank@sparkasse-koelnbonn.de"],
         "BBC": "",
-        "eMail_subject": "Unprocessed deliveries" 
+        "eMail_subject": "Unprocessed deliveries"
     },
     "EB": {
         "client_ID": "EB",
@@ -25,6 +32,6 @@
         "SN_mask": "CHECK_ERROR KSKK Xentis SN", 
         "eMail_To": ["fondsverwaltung@ksk-koeln.de"],
         "BBC": "",
-        "eMail_subject": "Unprocessed deliveries" 
+        "eMail_subject": "Unprocessed deliveries"
     }
 }

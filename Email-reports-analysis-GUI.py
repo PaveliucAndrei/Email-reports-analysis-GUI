@@ -109,7 +109,7 @@ def extract_attachments(attachments, target_folder:Path) -> int | list:
         attachments_extracted.append(attachmet.FileName)
 
     return attachments_count, attachments_extracted
-    
+
 # Left join list
 def left_join(swifts_name_subject, attachments_extracted) -> list:
     # Convert the data to sets
@@ -247,10 +247,10 @@ def main():
                     'usually_deliveries':[]}
         attachments_extracted = []
        
-        # Filter for the slected client
-        check_error_client = CLIENTS[radio_selection.get()]
-        if not check_error_client:
+        # Filter for the slected client        
+        if not radio_selection.get():
             return MESSAGE_SELECT.configure(text='Please make a selection')
+        check_error_client = CLIENTS[radio_selection.get()]
         
         # Extract the SN email, for the selected client
         sn_emails = subject_sn_filter(alert_emails, check_error_client['SN_mask'])
@@ -318,13 +318,15 @@ def main():
 
     # Create the radio buttons
     RADIO_AI = ct.CTkRadioButton(FRAME_EXTRACT, text='AI', value='AI', variable=radio_selection, font=('Helvetica', 22))
-    RADIO_AI.place(relx=0.18, rely=0.3, anchor=ct.N)
+    RADIO_AI.place(relx=0.15, rely=0.3, anchor=ct.N)
+    RADIO_HASPA = ct.CTkRadioButton(FRAME_EXTRACT, text='HASPA', value='HASPA', variable=radio_selection, font=('Helvetica', 22))
+    RADIO_HASPA.place(relx=0.31, rely=0.3, anchor=ct.N)
     RADIO_EB = ct.CTkRadioButton(FRAME_EXTRACT, text='EB', value='EB', variable=radio_selection, font=('Helvetica', 22))
-    RADIO_EB.place(relx=0.35, rely=0.3, anchor=ct.N)
+    RADIO_EB.place(relx=0.54, rely=0.3, anchor=ct.N)
     RADIO_KSKK = ct.CTkRadioButton(FRAME_EXTRACT, text='KSKK', value='KSKK', variable=radio_selection, font=('Helvetica', 22))
-    RADIO_KSKK.place(relx=0.55, rely=0.3, anchor=ct.N)
+    RADIO_KSKK.place(relx=0.70, rely=0.3, anchor=ct.N)
     RADIO_SKB = ct.CTkRadioButton(FRAME_EXTRACT, text='SKB', value='SKB', variable=radio_selection, font=('Helvetica', 22))
-    RADIO_SKB.place(relx=0.80, rely=0.3, anchor=ct.N)
+    RADIO_SKB.place(relx=0.90, rely=0.3, anchor=ct.N)
     # Button extract
     BUTTON_MAIN.configure(text='Extract 📎', command=extracting)
     BUTTON_MAIN.place(relx=0.5, rely=0.5, anchor=ct.N)
